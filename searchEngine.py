@@ -26,7 +26,7 @@ stemmer = nltk.stem.PorterStemmer()
 #Path
 path = os.getcwd()+'/AIR-Dataset'
 
-
+#Processing queries prior to ranking
 def processQueryRanking(row):
     data = numpy.char.lower(row)
     for i in range(len(symbols)):
@@ -40,11 +40,15 @@ def processQueryRanking(row):
     data = numpy.char.strip(new_data)
     return data
 
+
+
+
 # create overall index  TO BE REMOVED AND REPLACED BY BLIST CODE
+
+
 # index = {word1:{doc1:[row1, row2], doc2:[row2, row3]}, word2:{doc2:[row2]}} 
 # docindex = {doc1:{row1:[pos1, pos2]}, doc2:{row1:[pos1], row2:[pos1, pos2]}}
 # documents = {1:"BBCNEWS...csv", 2:"BBCNEWS...csv"}
-
 
 def createFullIndex(column):
   index = dict()
@@ -61,7 +65,7 @@ def createFullIndex(column):
     temp = dict()
     for row in df[column]:
       pos = 0
-      data = nltk.word_tokenize(str(process(row)))
+      data = nltk.word_tokenize(str(processQueryRanking(row)))
       for tok in data:
         if tok in index:
           #creating fullindex
@@ -95,7 +99,7 @@ def createFullIndex(column):
 ####### HANDLING DIFFERENT TYPES OF QUERIES #############
 
 def singleWordQuery(query):
-    cleaned = str(process(query))
+    cleaned = str(processQueryRanking(query))
     ans = index.get(cleaned)
     return ans
 
