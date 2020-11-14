@@ -92,10 +92,87 @@ def createFullIndex(column):
   return index, documents, docindex
 
 
+####### HANDLING DIFFERENT TYPES OF QUERIES #############
+
+def singleWordQuery(query):
+    cleaned = str(process(query))
+    ans = index.get(cleaned)
+    return ans
 
 
+######## RANKING #########
+
+#Checks query length and calls the functions accordingly
+def handleQuery(query):
+    if len(query.split())==1: #single word
+        return singleWordQuery(query)
+    
+
+#Creates DF using candidate docs(row)
+def corpusdf(ans):
+    ensuing_df_data=[]
+
+    for file in ans:
+        with open(path+"/"+documents[file]) as csv_file:
+            csv_reader = csv.reader(csv_file)
+            rows = list(csv_reader)
+    
+            for each_row in ans[file]:
+                ensuing_df_data.append(rows[each_row+1])       
+    ensuing_df = pandas.DataFrame(ensuing_df_data, columns = ['URL', 'MatchDateTime', 'Station', 'Show', 'IAShowID', 'IAPreviewThumb', 'Snippet'])
+    return ensuing_df
+
+#Creates df of the query and concatenates this with corpus_df
+def querydf(query):
+    data_query = [['filler', 'values', 'for', 'the', 'query','data',query]] 
+    querydf = pandas.DataFrame(data_query, columns = ['URL', 'MatchDateTime', 'Station', 'Show', 'IAShowID', 'IAPreviewThumb', 'Snippet']) 
+    global corpus_df
+    to_concatenate = [corpus_df, querydf]
+    final_df = pandas.concat(to_concatenate)
+    return final_df
+
+
+#Creates tf-idf vector space using concatenated df
+def vectorSpaceModel():   
+    tfidfv = TfidfVectorizer(min_df = 1, max_features=None, strip_accents='unicode', analyzer='word', token_pattern=r'\w{1,}', ngram_range={1,3}, use_idf=1, smooth_idf=1, sublinear_tf=1, stop_words='english')
+    global final_df
+    query_tfv_mat=tfidfv.fit_transform(final_df['Snippet'])
+    return query_tfv_mat
+
+#Finds similarity scores (cosine), sorts the docs based on sim scores and returns top 22 results
+def rankingFunc(query_tfv_mat):
+    global final_df
+    sim_scores = linear_kernel(query_tfv_mat, query_tfv_mat[len(final_df)-1]).flatten()
+    relevant_docs_indices = sim_scores.argsort()[:-24:-1]
+    return relevant_docs_indices
+    
+    
+#Displays the results in a given format
+def displayRanked(ranked_docs):
+    global final_df
+    rank = 1
+    rank_list = numpy.delete(ranked_docs,0)
+    for i in rank_list:
+        print('Rank: ',rank)
+        print(final_df.iloc[i])
+        print()
+        print('\n\n')
+        rank+=1
+    print(rank-1,' results found.')
+
+
+#Main function
 if __name__=="__main__":
-  index, documents, docindex = createFullIndex("Snippet")
+    index, documents, docindex = createFullIndex("Snippet")
+    query = 'timberlake'
+    ans=handleQuery(query)
+    corpus_df = corpusdf(ans)
+    final_df = querydf(query)
+    query_tfv_mat = vectorSpaceModel()
+    ranked_docs = rankingFunc(query_tfv_mat)
+    displayRanked(ranked_docs)
+
+
 
 
 
