@@ -27,7 +27,7 @@ def wildcard(word, bigrams, st):
     for i in range(len(word)-1):
         bi = word[i:i+2]
         if bi not in bigrams.keys():
-            bigrams[bi] = sortedset()
+            bigrams[bi] = set()
             bigrams[bi].add(st)
         elif st not in bigrams[bi]:
             bigrams[bi].add(st)
@@ -57,7 +57,7 @@ def process(row, bigrams):
  # docindex = {doc1:{row1:[pos1, pos2]}, doc2:{row1:[pos1], row2:[pos1, pos2]}}
  # documents = {1:"BBCNEWS...csv", 2:"BBCNEWS...csv"}
 
-  def createFullIndex(column):
+def createFullIndex(column):
     index = dict()
     documents = dict()
     docindex = dict()
