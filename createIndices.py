@@ -101,10 +101,24 @@ def createFullIndex(column):
         docindex[doc] = temp
         doc = doc+1
     return index, documents, docindex, bigrams
+
+
+# To write to files
+def write_dicts(index, documents, docindex, bigrams):
+    with open('index.p', 'wb') as fout:
+        pickle.dump(index, fout, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('documents.p', 'wb') as fout:
+        pickle.dump(documents, fout, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('docindex.p', 'wb') as fout:
+        pickle.dump(docindex, fout, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('bigrams.p', 'wb') as fout:
+         pickle.dump(bigrams, fout, protocol=pickle.HIGHEST_PROTOCOL)
+
   
-  
-  if__name__=="__main__":
+ 
+if __name__=="__main__":
     index, documents, docindex, bigrams = createFullIndex("Snippet")
+    write_dicts(index, documents, docindex, bigrams)
     
   
   
