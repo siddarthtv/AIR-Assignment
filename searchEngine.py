@@ -39,9 +39,20 @@ def load_data(path):
     return index,documents,docindex,bigrams
 
 
-
-#Processing queries prior to ranking
-def processQueryRanking(row):
+#Function to create bigrams
+def wildcard(word, bigrams, st):
+    word = "$"+word+"$"
+    for i in range(len(word)-1):
+        bi = word[i:i+2]
+        if bi not in bigrams.keys():
+            bigrams[bi] = set()
+            bigrams[bi].add(st)
+        elif st not in bigrams[bi]:
+            bigrams[bi].add(st)
+            
+            
+#Function used to process snippets prior to indexing
+def process(row, bigrams):
     data = numpy.char.lower(row)
     for i in range(len(symbols)):
         data = numpy.char.replace(data, symbols[i], '')
@@ -50,14 +61,17 @@ def processQueryRanking(row):
     words = nltk.tokenize.word_tokenize(str(data))
     new_data = ""
     for w in words:
-          new_data = new_data + " " + stemmer.stem(w)
+        st = stemmer.stem(w)
+        wildcard(w, bigrams, st)
+        new_data = new_data + " " + st
     data = numpy.char.strip(new_data)
     return data
-
+  
 
 
 ####### HANDLING DIFFERENT TYPES OF QUERIES #############
 
+#####SINGLE WORD QUERIES
 def singleWordQuery(query):
     cleaned = str(processQueryRanking(query))
     ans = index.get(cleaned)
@@ -65,10 +79,8 @@ def singleWordQuery(query):
 
 
 
+####PHRASE QUERIES
 
-#phrase query
-
-#get documents containing the terms
 def getDocs(term):
     if term in index.keys():
         #print(term, index[term])
@@ -76,17 +88,13 @@ def getDocs(term):
     else:
         return []
 
-#get common documents
 def getCommon(dind1, dind2):
     ans = []
     for i in dind1:
         if i in dind2:
             ans.append(i)
-    #print("getCommon:", ans)
     return ans
 
-
-#get common rows
 def getCommonRows(rows1, rows2, k):
     rows = []
     for i in rows1.keys():
@@ -96,8 +104,6 @@ def getCommonRows(rows1, rows2, k):
             j1 = 0
             j2 = 0
             while j1<len(pos1) and j2<len(pos2):
-                #print(pos1[j1])
-                #print(pos2[j2])
                 if pos2[j2] - pos1[j1] == k:
                     rows.append(i)
                     j1 = j1+1
@@ -106,11 +112,8 @@ def getCommonRows(rows1, rows2, k):
                     j1 = j1+1
                 else:
                     j2 = j2+1
-    #print("CommonRows", rows)
     return rows
 
-
-#find the rows with acceptable distance
 def getCommonData(docs, term1, term2, k):
     ans = {}
     for i in docs:
@@ -126,10 +129,8 @@ def getCommonData(docs, term1, term2, k):
             rows = getCommonRows(rows2, rows1, -k)
         if len(rows):
             ans[i] = rows
-    #print("CommonData", ans)
     return ans
 
-#results dictionary
 def createDict(results, data):
     for i in data.keys():
         for j in data[i]:
@@ -140,7 +141,7 @@ def createDict(results, data):
                 results[temp] = 1
                 
                 
-#processing a phrase query       
+                
 def pqprocess(row):
     data = numpy.char.lower(row)
     for i in range(len(symbols)):
@@ -155,7 +156,6 @@ def pqprocess(row):
     data = numpy.char.strip(new_data)
     return data
 
-#phrase Q func
 def phraseQuery(pquery):
     pcleaned = str(pqprocess(pquery)).split()
     results = dict()
@@ -171,7 +171,7 @@ def phraseQuery(pquery):
                 continue
             if len(dind1)<=len(dind2):
                 docs = getCommon(dind1, dind2)
-                #print(len(docs))
+
                 data = getCommonData(docs, pcleaned[i], pcleaned[j], j-i)
 
             else:
@@ -180,7 +180,7 @@ def phraseQuery(pquery):
             #print(data)
             createDict(results, data)
             j = j+1
-#    return results
+
     occs = dict()
     #print(results)
     for i in results.keys():
@@ -215,11 +215,71 @@ def phraseQuery(pquery):
     return final
 
 
+
+
+######WILCARD QUERIES
+
+def wildcardQuery(words):
+    ws = set()
+    for w in words:
+        for i in range(len(w)-1):
+            bi = w[i:i+2]
+            if bi not in bigrams.keys():
+                return "not there"
+            elif len(ws)==0:
+                ws = bigrams[bi]
+                continue
+            else:
+                ws = set.intersection(set(bigrams[bi]), ws)
+    result = set()
+    for i in words:
+        e, s = i.split('$')
+        for i in ws:
+            if i.startswith(s) and i.endswith(e):
+                result.add(i)
+    final = dict()
+    
+    for i in result:
+        res = singleWordQuery(i)
+        for j in res.keys():
+            if j in final:
+                final[j].update(res[j])
+            else:
+                final[j] = set()
+                final[j].update(res[j])
+    return final
+
+
 ######## RANKING #########
+
+#Processing queries prior to ranking
+def processQueryRanking(row):
+    data = numpy.char.lower(row)
+    for i in range(len(symbols)):
+        data = numpy.char.replace(data, symbols[i], '')
+    data = numpy.char.replace(data, ',', '')
+    data = numpy.char.replace(data, "'", "")
+    words = nltk.tokenize.word_tokenize(str(data))
+    new_data = ""
+    for w in words:
+          new_data = new_data + " " + stemmer.stem(w)
+    data = numpy.char.strip(new_data)
+    return data
 
 #Checks query length and calls the functions accordingly
 def handleQuery(query):
-    if len(query.split())==1: #single word
+    if '*' in query:
+        parts = query.split('*')
+        if '' in parts:
+            if parts[0] == '':
+                parts = [parts[1]+"$"]
+            elif parts[1] == '':
+                parts = ["$"+parts[0]]
+        else:
+            parts[0] = "$"+parts[0]
+            parts[1] = parts[1]+"$"
+        return wildcardQuery(parts)      
+    elif len(query.split())==1: #single word
         return singleWordQuery(query)
     else:
         return phraseQuery(query)
