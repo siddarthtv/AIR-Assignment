@@ -205,6 +205,8 @@ def phraseQuery(pquery):
     if len(occs)==0:
         for i in pcleaned:
             res = singleWordQuery(i)
+            if res is None:
+                continue
             for j in res.keys():
                 if j in final:
                     final[j].update(res[j])
@@ -225,7 +227,7 @@ def wildcardQuery(words):
         for i in range(len(w)-1):
             bi = w[i:i+2]
             if bi not in bigrams.keys():
-                return "not there"
+                return None
             elif len(ws)==0:
                 ws = bigrams[bi]
                 continue
@@ -241,6 +243,8 @@ def wildcardQuery(words):
     
     for i in result:
         res = singleWordQuery(i)
+        if res is None:
+            continue
         for j in res.keys():
             if j in final:
                 final[j].update(res[j])
@@ -318,7 +322,7 @@ def vectorSpaceModel(final_df):
 def rankingFunc(query_tfv_mat, final_df, k):
     sim_scores = linear_kernel(query_tfv_mat, query_tfv_mat[len(final_df)-1]).flatten()
     relevant_docs_indices = sim_scores.argsort()[:-k-2:-1]
-    return relevant_docs_indices
+    return (relevant_docs_indices, len(sim_scores)-1)
 
 #Displays the results in a given format
 def displayRanked(final_df, ranked_docs):
@@ -350,8 +354,8 @@ def run_query(query, num_queries):
     corpus_df = corpusdf(ans)
     final_df = querydf(corpus_df, query)
     query_tfv_mat = vectorSpaceModel(final_df)
-    ranked_docs = rankingFunc(query_tfv_mat, final_df, num_queries)
+    ranked_docs, num_relevant = rankingFunc(query_tfv_mat, final_df, num_queries)
     results = getRanked(final_df, ranked_docs)
     #displayRanked(final_df,ranked_docs)
-    return results
+    return results, num_relevant
     
