@@ -300,32 +300,28 @@ def corpusdf(ans):
     return ensuing_df
 
 #Creates df of the query and concatenates this with corpus_df
-def querydf(query):
+def querydf(corpus_df, query):
     data_query = [['filler', 'values', 'for', 'the', 'query','data',query]] 
     querydf = pandas.DataFrame(data_query, columns = ['URL', 'MatchDateTime', 'Station', 'Show', 'IAShowID', 'IAPreviewThumb', 'Snippet']) 
-    global corpus_df
     to_concatenate = [corpus_df, querydf]
     final_df = pandas.concat(to_concatenate)
     return final_df
 
 
 #Creates tf-idf vector space using concatenated df
-def vectorSpaceModel():   
+def vectorSpaceModel(final_df):   
     tfidfv = TfidfVectorizer(min_df = 1, max_features=None, strip_accents='unicode', analyzer='word', token_pattern=r'\w{1,}', ngram_range={1,3}, use_idf=1, smooth_idf=1, sublinear_tf=1, stop_words='english')
-    global final_df
     query_tfv_mat=tfidfv.fit_transform(final_df['Snippet'])
     return query_tfv_mat
 
 #Finds similarity scores (cosine), sorts the docs based on sim scores and returns top 22 results
-def rankingFunc(query_tfv_mat):
-    global final_df
+def rankingFunc(query_tfv_mat, final_df, k):
     sim_scores = linear_kernel(query_tfv_mat, query_tfv_mat[len(final_df)-1]).flatten()
-    relevant_docs_indices = sim_scores.argsort()[:-24:-1]
+    relevant_docs_indices = sim_scores.argsort()[:-k-2:-1]
     return relevant_docs_indices
 
 #Displays the results in a given format
-def displayRanked(ranked_docs):
-    global final_df
+def displayRanked(final_df, ranked_docs):
     rank = 1
     rank_list = numpy.delete(ranked_docs,0)
     for i in rank_list:
@@ -335,15 +331,27 @@ def displayRanked(ranked_docs):
         print('\n\n')
         rank+=1
     print(rank-1,' results found.')
-    
+
+def getRanked(final_df, ranked_docs):
+    results = []
+    rank_list = numpy.delete(ranked_docs,0)
+    for i in rank_list:
+        temp = final_df.iloc[i].to_dict()
+        results.append(temp)
+    return results
     
 index, documents, docindex, bigrams = load_data('.')
 
-query = "major report released"
-ans=handleQuery(query)
-corpus_df = corpusdf(ans)
-final_df = querydf(query)
-query_tfv_mat = vectorSpaceModel()
-ranked_docs = rankingFunc(query_tfv_mat)
-displayRanked(ranked_docs)
+def run_query(query, num_queries):
+    #query = "major report released"
+    ans = handleQuery(query)
+    if ans is None:
+        return []
+    corpus_df = corpusdf(ans)
+    final_df = querydf(corpus_df, query)
+    query_tfv_mat = vectorSpaceModel(final_df)
+    ranked_docs = rankingFunc(query_tfv_mat, final_df, num_queries)
+    results = getRanked(final_df, ranked_docs)
+    #displayRanked(final_df,ranked_docs)
+    return results
     
