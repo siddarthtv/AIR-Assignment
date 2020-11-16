@@ -3,7 +3,7 @@ import os
 import pandas
 import nltk
 import numpy
-
+import pickle
 #System requirment, nltk punkt
 
 #Pandas options
