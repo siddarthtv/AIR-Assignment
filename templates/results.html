@@ -9,16 +9,30 @@
             td {
                 padding: 10px;
             }
+            a:visited{
+                color: blue;
+            }
             #center {
                 text-align: center;
+            }
+            button {
+                font-size: large;
+                margin-bottom: 10px;
+            }
+            img {
+                border: 1px solid;
+                padding: 5px;
+                height: 110px;
+                width: 160px;
             }
         </style>
         <title>Results for query</title>
     </head>
 
     <body>
-        <h2>Results for query: {{ query }}</h2>
-        <p>Processing Time: {{ query_time }} s</p>
+        <h2>Results for query: "{{ query }}"</h2>
+        <p>Processing Time: <b>{{ query_time }} s</b></p>
+        <p>Number of relevant results found: <b>{{ num_relevant }}</b></p>
         <button onclick="document.location='/'">Return to query page</button>
         {% if result|length > 0 %}
         <table>
@@ -33,7 +47,7 @@
             <tr>
                 <td id="center">{{ index + 1 }}</td>
                 <td id="center"><a href="{{ result[index]['URL'] }}" target="_blank"><img src="{{ result[index]['IAPreviewThumb'] }}"></a></td>
-                <td id="center">{{ result[index]['URL'] }}</td>
+                <td id="center"><a href="{{ result[index]['URL'] }}" target="_blank">{{ result[index]['URL'] }}</a></td>
                 <td>{{ result[index]['Snippet'] }}</td>
                 <td id="center">{{ result[index]['MatchDateTime'] }}</td>
                 <td id="center">{{ result[index]['Station'] }}</td>
