@@ -4,7 +4,7 @@ This repository contains the code for a basic search engine as part of our Algor
 
 ## Flow
 
-- Posting list and bigrams posting list are created from the Snippets
+- Posting list and bigrams posting list are created from the Snippets (run createIndices.py)
 - These are used to narrow down candidate documents for word queries, phrase queries, wilcard queries
 - Vector space models of the candidates are built with TF-IDF scores
 - Candidate documents are ranked based on relevance and displaced
@@ -12,3 +12,9 @@ This repository contains the code for a basic search engine as part of our Algor
 ## Dataset
 
 AIR-Dataset: Contains 418 CSV files, with approximately 95k rows.
+
+## Code
+
+createIndices.py: Program to create inverted index and postings list and save to file
+searchEngine.py: Program to load index from file and functions to search given a query
+server.py: Program to provide user interface for queries
