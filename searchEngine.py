@@ -299,14 +299,16 @@ def corpusdf(ans):
             rows = list(csv_reader)
     
             for each_row in ans[file]:
-                ensuing_df_data.append(rows[each_row+1])       
-    ensuing_df = pandas.DataFrame(ensuing_df_data, columns = ['URL', 'MatchDateTime', 'Station', 'Show', 'IAShowID', 'IAPreviewThumb', 'Snippet'])
+                mod_row = rows[each_row+1] + [file, each_row+1]
+                ensuing_df_data.append(mod_row)       
+    ensuing_df = pandas.DataFrame(ensuing_df_data, columns = ['URL', 'MatchDateTime', 'Station', 'Show', 'IAShowID', 'IAPreviewThumb', 'Snippet', 'DocID', 'RowID'])
+
     return ensuing_df
 
 #Creates df of the query and concatenates this with corpus_df
 def querydf(corpus_df, query):
-    data_query = [['filler', 'values', 'for', 'the', 'query','data',query]] 
-    querydf = pandas.DataFrame(data_query, columns = ['URL', 'MatchDateTime', 'Station', 'Show', 'IAShowID', 'IAPreviewThumb', 'Snippet']) 
+    data_query = [['filler', 'values', 'for', 'the', 'query','data',query, 0, 0]] 
+    querydf = pandas.DataFrame(data_query, columns = ['URL', 'MatchDateTime', 'Station', 'Show', 'IAShowID', 'IAPreviewThumb', 'Snippet', 'DocID', 'RowID']) 
     to_concatenate = [corpus_df, querydf]
     final_df = pandas.concat(to_concatenate)
     return final_df
